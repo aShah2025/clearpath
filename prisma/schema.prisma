@@ -1,0 +1,102 @@
+// ClearPath data model.
+//
+// Tenant isolation: every user-owned row carries `userId`. ActionItem
+// references its Document through the composite key (documentId, userId), so
+// the database itself rejects an action item whose owner differs from its
+// parent document's owner.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Mirrors a Supabase `auth.users` row; `id` is the Supabase auth user id.
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  name      String?  @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  documents   Document[]
+  actionItems ActionItem[]
+
+  @@map("users")
+}
+
+/// A file uploaded by a user, plus the text and summary extracted from it.
+model Document {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @map("user_id") @db.Uuid
+  /// Location in private cloud storage (e.g. a Supabase Storage object path).
+  /// Never a public URL; serve files through short-lived signed URLs.
+  fileUrl          String         @map("file_url")
+  fileName         String         @map("file_name") @db.VarChar(255)
+  status           DocumentStatus @default(PENDING)
+  /// Full OCR text. Null until extraction finishes.
+  rawText          String?        @map("raw_text") @db.Text
+  /// Plain-language explanation at a ~6th-grade reading level. Null until processed.
+  plainSummary     String?        @map("plain_summary") @db.Text
+  /// Language detected in the source document (BCP 47, e.g. "es"). Null until detected.
+  detectedLanguage String?        @map("detected_language") @db.VarChar(35)
+  /// Language the user wants the explanation in (BCP 47).
+  targetLanguage   String         @default("en") @map("target_language") @db.VarChar(35)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionItems ActionItem[]
+
+  /// Target for ActionItem's composite foreign key.
+  @@unique([id, userId])
+  /// Serves every per-user lookup (userId is the leading column) and the
+  /// "my documents, newest first" listing, so no separate userId index is needed.
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("documents")
+}
+
+/// One step on a document's timeline, as extracted by the AI.
+model ActionItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  documentId  String    @map("document_id") @db.Uuid
+  /// Owner, denormalized from Document so every query can be scoped by user
+  /// without a join. Kept consistent by the composite foreign key below.
+  userId      String    @map("user_id") @db.Uuid
+  title       String    @db.VarChar(200)
+  description String    @db.Text
+  /// Null when the notice gives no fixed date (e.g. "within 5 days of service").
+  dueDate     DateTime? @map("due_date") @db.Timestamptz(6)
+  /// What happens if the user misses this step.
+  consequence String    @db.Text
+  priority    Priority  @default(MEDIUM)
+  /// Display order on the timeline.
+  position    Int
+  isCompleted Boolean   @default(false) @map("is_completed")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId, userId], references: [id, userId], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, position])
+  @@index([userId, isCompleted])
+  @@index([userId, dueDate])
+  @@map("action_items")
+}
