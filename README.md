@@ -42,6 +42,7 @@ ClearPath turns eviction notices, court papers, and government letters into plai
 | `npm run build` | Production build |
 | `npm run typecheck` | Type-check without emitting |
 | `npm run lint` | ESLint |
+| `npm test` | Unit and route tests. Set `TEST_DATABASE_URL` to a throwaway Postgres (e.g. from `npx prisma dev`) to also run the database tests |
 | `npm run db:migrate` | Create and apply a migration in development |
 | `npm run db:deploy` | Apply pending migrations |
 | `npm run db:studio` | Open Prisma Studio |

@@ -1,7 +1,7 @@
 import "server-only";
 import { Prisma, type DocumentStatus, type Priority } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/db";
-import { NotFoundError } from "@/lib/errors";
+import { ConflictError, NotFoundError } from "@/lib/errors";
 import { parseRecordId } from "@/lib/data/ids";
 
 /*
@@ -127,6 +127,41 @@ export async function updateDocumentStatus(
       select: documentSummarySelect,
     }),
   );
+}
+
+/** A PROCESSING claim older than this is treated as abandoned (e.g. a crash). */
+const STALE_PROCESSING_MS = 5 * 60 * 1000;
+
+/**
+ * Atomically moves a document to PROCESSING and stores its text. Fails with
+ * ConflictError while another analysis of the same document is running, so a
+ * double-submit cannot start two paid model calls.
+ */
+export async function claimDocumentForProcessing(
+  userId: string,
+  documentId: string,
+  rawText: string,
+): Promise<{ targetLanguage: string }> {
+  const id = parseRecordId(documentId, RESOURCE);
+  const prisma = getPrisma();
+  const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS);
+
+  const { count } = await prisma.document.updateMany({
+    where: {
+      id,
+      userId,
+      OR: [{ status: { not: "PROCESSING" } }, { updatedAt: { lt: staleBefore } }],
+    },
+    data: { status: "PROCESSING", rawText },
+  });
+
+  const document = await prisma.document.findUnique({
+    where: { id_userId: { id, userId } },
+    select: { targetLanguage: true },
+  });
+  if (!document) throw new NotFoundError(RESOURCE);
+  if (count === 0) throw new ConflictError("This document is already being analyzed.");
+  return document;
 }
 
 /**
