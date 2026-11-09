@@ -48,6 +48,8 @@ export type CreateDocumentInput = {
   fileUrl: string;
   fileName: string;
   targetLanguage?: string;
+  /** Set for pasted text; files get their text when processed. */
+  rawText?: string;
 };
 
 export type ActionItemInput = {
@@ -108,6 +110,7 @@ export async function createDocument(
       userId,
       fileUrl: input.fileUrl,
       fileName: input.fileName,
+      ...(input.rawText && { rawText: input.rawText }),
       ...(input.targetLanguage && { targetLanguage: input.targetLanguage }),
     },
     select: documentSummarySelect,
@@ -129,6 +132,22 @@ export async function updateDocumentStatus(
   );
 }
 
+/** Fields needed to read or answer questions about a document, including its text. */
+export async function getDocumentSource(userId: string, documentId: string) {
+  const id = parseRecordId(documentId, RESOURCE);
+  const document = await getPrisma().document.findUnique({
+    where: { id_userId: { id, userId } },
+    select: { fileUrl: true, rawText: true, plainSummary: true, targetLanguage: true },
+  });
+  if (!document) throw new NotFoundError(RESOURCE);
+  return document;
+}
+
+/** Documents this user created since `since`, for upload rate limiting. */
+export async function countDocumentsSince(userId: string, since: Date): Promise<number> {
+  return getPrisma().document.count({ where: { userId, createdAt: { gte: since } } });
+}
+
 /** A PROCESSING claim older than this is treated as abandoned (e.g. a crash). */
 const STALE_PROCESSING_MS = 5 * 60 * 1000;
 
@@ -140,7 +159,7 @@ const STALE_PROCESSING_MS = 5 * 60 * 1000;
 export async function claimDocumentForProcessing(
   userId: string,
   documentId: string,
-  rawText: string,
+  rawText?: string,
 ): Promise<{ targetLanguage: string }> {
   const id = parseRecordId(documentId, RESOURCE);
   const prisma = getPrisma();
@@ -152,7 +171,7 @@ export async function claimDocumentForProcessing(
       userId,
       OR: [{ status: { not: "PROCESSING" } }, { updatedAt: { lt: staleBefore } }],
     },
-    data: { status: "PROCESSING", rawText },
+    data: { status: "PROCESSING", ...(rawText !== undefined && { rawText }) },
   });
 
   const document = await prisma.document.findUnique({

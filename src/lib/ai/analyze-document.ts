@@ -74,13 +74,19 @@ export async function requestAnalysis(
 export async function analyzeDocument(
   userId: string,
   documentId: string,
-  rawText: string,
+  source: string | (() => Promise<string>),
   client?: AnalysisClient,
 ): Promise<DocumentDetail> {
-  // Throws NotFound or Conflict before any status change or model call.
-  const { targetLanguage } = await claimDocumentForProcessing(userId, documentId, rawText);
+  // Throws NotFound or Conflict before any status change or model call. A lazy
+  // source (reading a file) runs only after the claim succeeds.
+  const { targetLanguage } = await claimDocumentForProcessing(
+    userId,
+    documentId,
+    typeof source === "string" ? source : undefined,
+  );
 
   try {
+    const rawText = typeof source === "string" ? source : await source();
     const analysis = await requestAnalysis(rawText, targetLanguage, client);
     return await saveDocumentAnalysis(userId, documentId, {
       rawText,

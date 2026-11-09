@@ -35,6 +35,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class RateLimitedError extends AppError {
+  constructor(message = "You've reached the limit for now. Please try again later.") {
+    super(message, 429, "RATE_LIMITED");
+  }
+}
+
 /** The model call failed or returned something we could not use. */
 export class AnalysisError extends AppError {
   constructor(message = "We couldn't read this document right now. Please try again.") {

@@ -15,13 +15,21 @@ export function SiteHeader({ appName }: SiteHeaderProps) {
           {appName}
         </Link>
         <nav aria-label="Main">
-          <ul className="flex items-center gap-4 text-sm font-medium">
+          <ul className="flex items-center gap-1 text-sm font-medium">
             <li>
               <Link
-                href="/"
+                href="/demo"
                 className="inline-flex min-h-11 items-center rounded-md px-2 text-foreground underline-offset-4 hover:underline"
               >
-                Home
+                Example
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-11 items-center rounded-md px-2 text-foreground underline-offset-4 hover:underline"
+              >
+                My documents
               </Link>
             </li>
           </ul>

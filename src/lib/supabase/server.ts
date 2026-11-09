@@ -9,8 +9,10 @@ import { getServerEnv } from "@/lib/env";
  * request; never share an instance across requests.
  */
 export async function createSupabaseServerClient(): Promise<SupabaseClient> {
-  const env = getServerEnv();
+  // cookies() first: it marks the render as dynamic, so config is never read
+  // during prerendering.
   const cookieStore = await cookies();
+  const env = getServerEnv();
 
   return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {

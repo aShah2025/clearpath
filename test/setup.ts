@@ -2,6 +2,7 @@
 // Supabase or Anthropic: the Claude client is always a fake.
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= "https://test.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= "test-anon-key";
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-key";
 process.env.ANTHROPIC_API_KEY ??= "test-key";
 
 // Database tests run only against TEST_DATABASE_URL, never DATABASE_URL, so a
