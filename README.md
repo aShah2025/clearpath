@@ -4,6 +4,22 @@ ClearPath turns eviction notices, court papers, and government letters into plai
 
 > ClearPath explains documents. It is not legal advice.
 
+## Try it
+
+Open `/demo` to see a sample eviction notice explained in English and Spanish. It needs no account or API key.
+
+## Features
+
+- Add a phone photo, a PDF, or pasted text; Claude reads the file
+- A plain-language summary at a 6th-grade reading level, in 12 languages
+- Next steps in priority order, each with what happens if you miss it
+- Deadlines that keep the notice's wording and never guess a date
+- Download deadlines to your calendar, with reminders
+- Read explanations out loud
+- Ask follow-up questions answered only from your document
+- Links to free legal aid
+- Delete a document and its file at any time
+
 ## Stack
 
 - Next.js 16 (App Router), React 19, TypeScript (strict)
@@ -21,6 +37,8 @@ ClearPath turns eviction notices, court papers, and government letters into plai
    ```
 
 2. Copy `.env.example` to `.env` (Prisma CLI) and `.env.local` (Next.js), then fill in your Supabase and Anthropic values.
+
+   In Supabase, add `<your site>/auth/callback` to Auth > URL Configuration > Redirect URLs. The private `documents` storage bucket is created automatically on the first upload.
 
 3. Apply the database migrations:
 
@@ -42,6 +60,7 @@ ClearPath turns eviction notices, court papers, and government letters into plai
 | `npm run build` | Production build |
 | `npm run typecheck` | Type-check without emitting |
 | `npm run lint` | ESLint |
+| `npm test` | Unit and route tests. Set `TEST_DATABASE_URL` to a throwaway Postgres (e.g. from `npx prisma dev`) to also run the database tests |
 | `npm run db:migrate` | Create and apply a migration in development |
 | `npm run db:deploy` | Apply pending migrations |
 | `npm run db:studio` | Open Prisma Studio |

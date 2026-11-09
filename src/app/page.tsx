@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const STEPS = [
   {
     title: "Add your document",
@@ -11,6 +13,15 @@ const STEPS = [
     title: "Know what to do and when",
     body: "See your next steps in order and every deadline you must meet.",
   },
+] as const;
+
+const FEATURES = [
+  "Works from a phone photo",
+  "Explains in 12 languages",
+  "Reads your explanation out loud",
+  "Adds deadlines to your calendar",
+  "Answers your questions about the document",
+  "Points you to free legal help",
 ] as const;
 
 export default function HomePage() {
@@ -27,6 +38,14 @@ export default function HomePage() {
           ClearPath reads eviction notices, court papers, and government letters and tells
           you, in plain language, what they say, what to do next, and by when.
         </p>
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+          <Link href="/documents/new" className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-6 font-semibold text-primary-foreground">
+            Explain my document
+          </Link>
+          <Link href="/demo" className="inline-flex min-h-12 items-center justify-center rounded-md border px-6 font-semibold hover:bg-accent">
+            See an example first
+          </Link>
+        </div>
       </section>
 
       <section aria-labelledby="how-heading" className="mt-12">
@@ -42,6 +61,19 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section aria-labelledby="features-heading" className="mt-12">
+        <h2 id="features-heading" className="text-xl font-semibold">
+          Made for real life
+        </h2>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {FEATURES.map((feature) => (
+            <li key={feature} className="rounded-lg bg-muted p-4 text-sm font-medium">
+              {feature}
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
